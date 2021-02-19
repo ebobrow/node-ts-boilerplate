@@ -13,7 +13,7 @@
   },
   "keywords": [],
   "author": "Elliot Bobrow",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/ebobrow/node-ts-boilerplate/issues"
   },
