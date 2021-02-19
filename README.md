@@ -5,7 +5,7 @@ Boilerplate for a node + typescript + express app because I'm lazy.
 ## Usage
 
 ```
-npx node-ts-app
+npx node-ts-generator
 
 # then:
 npm install
