@@ -1,6 +1,6 @@
 {
   "name": "node-ts-generator",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Boilerplate for a node + typescript + express app",
   "main": "index.js",
   "bin": "index.js",
@@ -11,7 +11,12 @@
     "type": "git",
     "url": "git+https://github.com/ebobrow/node-ts-boilerplate.git"
   },
-  "keywords": [],
+  "keywords": [
+    "typescript",
+    "ts",
+    "boilerplate",
+    "generator"
+  ],
   "author": "Elliot Bobrow",
   "license": "MIT",
   "bugs": {
