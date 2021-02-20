@@ -7,6 +7,8 @@ Boilerplate for a node + typescript + express app.
 ```
 npx node-ts-generator
 
+cd projectname
+
 # then:
 npm install
 npm run dev
