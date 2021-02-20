@@ -50,4 +50,17 @@ const copyFolderContents = (pathToFile, folder) => {
   fs.mkdirSync(path.join(CURR_DIR, name));
 
   copyFolderContents(TEMPLATE_PATH, name);
+
+  console.log(`
+Next:
+  cd ${name}
+
+  npm install
+  npm run dev
+
+or:
+  yarn install
+  yarn dev
+
+Then go to http://localhost:3000 and it should say Hello world!`);
 })();
