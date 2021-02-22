@@ -2,26 +2,11 @@
 const inquirer = require('inquirer');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const cp = require('child_process');
 const chalk = require('chalk');
-const readline = require('readline');
 
 const TEMPLATE_PATH = path.join(__dirname, 'template');
-
 const CURR_DIR = process.cwd();
-
-const QUESTIONS = [
-  {
-    name: 'name',
-    type: 'input',
-    message: 'Project name:',
-    validate: input => {
-      if (/^[^\\/?%*:|"<>\.]+$/.test(input)) return true;
-
-      return 'Invalid project name';
-    }
-  }
-];
 
 const copyFolderContents = (pathToFile, folder) => {
   const files = fs.readdirSync(pathToFile);
@@ -34,7 +19,6 @@ const copyFolderContents = (pathToFile, folder) => {
     if (stats.isFile()) {
       const contents = fs.readFileSync(origFilePath, 'utf8');
 
-      // Easiest way to be able to push to github?
       if (file === 'gitignore.txt') file = '.gitignore';
 
       console.log(`${chalk.green('Adding')} ${folder}/${file}`);
@@ -49,41 +33,63 @@ const copyFolderContents = (pathToFile, folder) => {
   });
 };
 
-(async () => {
-  const { name } = await inquirer.prompt(QUESTIONS);
+const onErr = err => {
+  console.log('Error:', err?.message);
+  console.log('Something went wrong. Terminating process.');
+  process.exit(1);
+};
 
-  const doneMsg = `Done!
+const main = async () => {
+  const { name } = await inquirer.prompt([
+    {
+      name: 'name',
+      type: 'input',
+      message: 'Project name:',
+      validate: input => {
+        if (/^[^\\/?%*:|"<>\.]+$/.test(input)) return true;
 
-Next:
+        return 'Invalid project name';
+      }
+    }
+  ]);
+
+  const doneMsg = `Next:
   ${chalk.blue('cd')} ${name}
   ${chalk.blue('npm')} run dev
 
 Then go to http://localhost:3000 and it should say Hello world!`;
 
-  fs.mkdirSync(path.join(CURR_DIR, name));
+  try {
+    fs.mkdirSync(path.join(CURR_DIR, name));
+  } catch (err) {
+    if (err.code === 'EEXIST') {
+      const { overwrite } = await inquirer.prompt([
+        {
+          name: 'overwrite',
+          type: 'confirm',
+          message: 'Folder already exists. Overwrite?'
+        }
+      ]);
+      if (!overwrite) {
+        console.log('Okay, terminating process');
+        process.exit();
+      } else {
+        fs.rmdirSync(name, {
+          recursive: true
+        });
+        fs.mkdirSync(path.join(CURR_DIR, name));
+      }
+    } else {
+      onErr(err);
+    }
+  } finally {
+    copyFolderContents(TEMPLATE_PATH, name);
 
-  copyFolderContents(TEMPLATE_PATH, name);
+    console.log('\nInstalling dependencies...\n');
 
-  console.log('\nInstalling dependencies...\n');
-
-  const process = spawn('npm', ['install', `--prefix`, `./${name}`]);
-
-  readline
-    .createInterface({ input: process.stdout, terminal: false })
-    .on('line', data => {
-      console.log(data);
-    });
-
-  readline
-    .createInterface({ input: process.stderr, terminal: false })
-    .on('line', data => {
-      console.log(data);
-    });
-  process.on('error', err => {
-    console.log('Uh oh...');
-    console.log(err);
-  });
-  process.on('exit', () => {
+    cp.execSync(`npm install --prefix ./${name}`, { stdio: [0, 1, 2] });
     console.log(doneMsg);
-  });
-})();
+  }
+};
+
+main().catch(onErr);

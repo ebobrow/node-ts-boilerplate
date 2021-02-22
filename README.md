@@ -1,6 +1,6 @@
 # Node Typescript Generator
 
-Boilerplate for a node + typescript + express app.
+CLI inspired by create-react-app to generate a node + typescript + express app.
 
 ## Usage
 
