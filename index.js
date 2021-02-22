@@ -2,6 +2,9 @@
 const inquirer = require('inquirer');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
+const chalk = require('chalk');
+const readline = require('readline');
 
 const TEMPLATE_PATH = path.join(__dirname, 'template');
 
@@ -34,6 +37,8 @@ const copyFolderContents = (pathToFile, folder) => {
       // Easiest way to be able to push to github?
       if (file === 'gitignore.txt') file = '.gitignore';
 
+      console.log(`${chalk.green('Adding')} ${folder}/${file}`);
+
       const writePath = path.join(CURR_DIR, folder, file);
       fs.writeFileSync(writePath, contents, 'utf8');
     } else if (stats.isDirectory()) {
@@ -47,20 +52,38 @@ const copyFolderContents = (pathToFile, folder) => {
 (async () => {
   const { name } = await inquirer.prompt(QUESTIONS);
 
+  const doneMsg = `Done!
+
+Next:
+  ${chalk.blue('cd')} ${name}
+  ${chalk.blue('npm')} run dev
+
+Then go to http://localhost:3000 and it should say Hello world!`;
+
   fs.mkdirSync(path.join(CURR_DIR, name));
 
   copyFolderContents(TEMPLATE_PATH, name);
 
-  console.log(`
-Next:
-  cd ${name}
+  console.log('\nInstalling dependencies...\n');
 
-  npm install
-  npm run dev
+  const process = spawn('npm', ['install', `--prefix`, `./${name}`]);
 
-or:
-  yarn install
-  yarn dev
+  readline
+    .createInterface({ input: process.stdout, terminal: false })
+    .on('line', data => {
+      console.log(data);
+    });
 
-Then go to http://localhost:3000 and it should say Hello world!`);
+  readline
+    .createInterface({ input: process.stderr, terminal: false })
+    .on('line', data => {
+      console.log(data);
+    });
+  process.on('error', err => {
+    console.log('Uh oh...');
+    console.log(err);
+  });
+  process.on('exit', () => {
+    console.log(doneMsg);
+  });
 })();
