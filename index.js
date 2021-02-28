@@ -46,8 +46,17 @@ const onErr = err => {
   process.exit(1);
 };
 
+const yarnCheck = () => {
+  try {
+    cp.execSync('which yarn');
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const main = async () => {
-  const { name, packageManager } = await inquirer.prompt([
+  let questions = [
     {
       name: 'name',
       type: 'input',
@@ -57,14 +66,21 @@ const main = async () => {
 
         return 'Invalid project name';
       }
-    },
-    {
+    }
+  ];
+
+  if (yarnCheck()) {
+    questions.push({
       name: 'packageManager',
       type: 'list',
-      choices: ['npm', 'yarn'],
+      choices: ['yarn', 'npm'],
       message: 'Package manager:'
-    }
-  ]);
+    });
+  }
+
+  const res = await inquirer.prompt(questions);
+  const { name } = res;
+  const packageManager = res.packageManager || 'npm';
 
   const doneMsg = `Next:
   ${chalk.blue('cd')} ${name}
