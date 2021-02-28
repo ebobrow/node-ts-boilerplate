@@ -8,7 +8,7 @@ const chalk = require('chalk');
 const TEMPLATE_PATH = path.join(__dirname, 'template');
 const CURR_DIR = process.cwd();
 
-const copyFolderContents = (pathToFile, folder) => {
+const copyFolderContents = (pathToFile, folder, packageManager) => {
   const files = fs.readdirSync(pathToFile);
 
   files.forEach(file => {
@@ -19,12 +19,19 @@ const copyFolderContents = (pathToFile, folder) => {
     if (stats.isFile()) {
       const contents = fs.readFileSync(origFilePath, 'utf8');
 
-      if (file === 'gitignore.txt') file = '.gitignore';
+      if (
+        (file === 'yarn.lock' && packageManager === 'npm') ||
+        (file === 'package-lock.json' && packageManager === 'yarn')
+      ) {
+        // ignore
+      } else {
+        if (file === 'gitignore.txt') file = '.gitignore';
 
-      console.log(`${chalk.green('Adding')} ${folder}/${file}`);
+        console.log(`${chalk.green('Adding')} ${folder}/${file}`);
 
-      const writePath = path.join(CURR_DIR, folder, file);
-      fs.writeFileSync(writePath, contents, 'utf8');
+        const writePath = path.join(CURR_DIR, folder, file);
+        fs.writeFileSync(writePath, contents, 'utf8');
+      }
     } else if (stats.isDirectory()) {
       fs.mkdirSync(path.join(CURR_DIR, folder, file));
 
@@ -40,7 +47,7 @@ const onErr = err => {
 };
 
 const main = async () => {
-  const { name } = await inquirer.prompt([
+  const { name, packageManager } = await inquirer.prompt([
     {
       name: 'name',
       type: 'input',
@@ -50,12 +57,18 @@ const main = async () => {
 
         return 'Invalid project name';
       }
+    },
+    {
+      name: 'packageManager',
+      type: 'list',
+      choices: ['npm', 'yarn'],
+      message: 'Package manager:'
     }
   ]);
 
   const doneMsg = `Next:
   ${chalk.blue('cd')} ${name}
-  ${chalk.blue('npm')} run dev
+  ${chalk.blue(packageManager)} ${packageManager === 'npm' ? 'run dev' : 'dev'}
 
 Then go to http://localhost:3000 and it should say Hello world!`;
 
@@ -83,11 +96,16 @@ Then go to http://localhost:3000 and it should say Hello world!`;
       onErr(err);
     }
   } finally {
-    copyFolderContents(TEMPLATE_PATH, name);
+    copyFolderContents(TEMPLATE_PATH, name, packageManager);
 
     console.log('\nInstalling dependencies...\n');
 
-    cp.execSync(`npm install --prefix ./${name}`, { stdio: [0, 1, 2] });
+    const command =
+      packageManager === 'npm'
+        ? `npm ci --prefix ./${name}`
+        : `yarn install --cwd ${name}`;
+
+    cp.execSync(command, { stdio: [0, 1, 2] });
     console.log(doneMsg);
   }
 };
